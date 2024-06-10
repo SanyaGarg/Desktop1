@@ -1,22 +1,18 @@
-# Use an official C++ runtime as a parent image
+# Use an official Ubuntu runtime as a parent image
 FROM gcc:10
 
-# Set the working directory
-WORKDIR /usr/src/app
+# Install required dependencies
+RUN apt-get update && \
+    apt-get install -y cmake g++ curl libcurl4-openssl-dev
 
-# Copy the current directory contents into the container at /usr/src/app
-COPY . .
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-# Install CMake and Curl
-RUN apt-get update && apt-get install -y cmake libcurl4-openssl-dev
+# Create and set the working directory
+WORKDIR /app
 
-# Create a build directory
-RUN mkdir -p build
+# Run CMake to configure the project
+RUN cmake . && make
 
-# Build the project
-WORKDIR /usr/src/app/build
-RUN cmake ..
-RUN cmake --build .
-
-# Run the application
-CMD ["./http_load_test_cpp", "--url", "http://example.com", "--qps", "10", "--duration", "30", "--method", "GET"]
+# Set the command to run the application
+CMD ["./http_load_test_cpp", "http://example.com", "10", "30"]
