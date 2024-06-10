@@ -14,5 +14,8 @@ WORKDIR /app
 # Run CMake to configure the project
 RUN cmake . && make
 
-# Set the command to run the application
-CMD ["./http_load_test_cpp", "http://example.com", "10", "30"]
+# Set the entry point to the built executable
+ENTRYPOINT ["./http_load_test_cpp_update"]
+
+# Run the application
+CMD ["./http_load_test_cpp_update", "--url", "http://example.com", "--qps", "10", "--duration", "30", "--method", "GET"]
