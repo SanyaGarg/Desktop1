@@ -68,3 +68,18 @@ docker run --rm http_load_test_cpp --url http://example.com --qps 10 --duration 
 - **90th Percentile Latency**: The 90th percentile latency of successful requests.
 - **99th Percentile Latency**: The 99th percentile latency of successful requests.
 - **Total Duration**: The total duration of the test.
+
+## Improved QPS Handling for HTTP Load Testing
+
+### Issue
+The current implementation pushes requests into the queue in bursts at the start of each second, leading to uneven load distribution.
+
+### Solution
+To evenly distribute requests across each second, we use a timer-based approach to pace request generation.
+
+### Implementation Details
+1. **Calculate Request Interval**: Determine the interval (`request_interval`) between each request based on the desired QPS.
+   
+2. **Use Timer for Pacing**: Instead of pushing all requests into the queue at once, use a timer to add requests at regular intervals over the second.
+
+3. **Adjust Worker Threads**: Ensure worker threads handle requests as they become available, maintaining a steady flow throughout the test duration.
