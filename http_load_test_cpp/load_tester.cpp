@@ -74,26 +74,46 @@ public:
         auto start = std::chrono::high_resolution_clock::now();
         std::vector<std::thread> threads;
 
-        for (int i = 0; i < qps; ++i) {
+        // Create a pool of worker threads
+        for (int i = 0; i < std::thread::hardware_concurrency(); ++i) {
             threads.emplace_back(&LoadTester::worker, this);
         }
 
-        for (int i = 0; i < duration; ++i) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            {
-                std::lock_guard<std::mutex> lock(queue_mutex);
-                for (int j = 0; j < qps; ++j) {
-                    request_queue.push(j);
+        // Calculate the interval between requests based on desired QPS
+        auto interval = std::chrono::microseconds(1000000 / qps);
+
+        auto next_request_time = start;
+        auto end_time = start + std::chrono::seconds(duration);
+
+        // Schedule requests at the desired QPS
+        while (std::chrono::high_resolution_clock::now() < end_time) {
+            auto now = std::chrono::high_resolution_clock::now();
+            if (now >= next_request_time) {
+                {
+                    std::lock_guard<std::mutex> lock(queue_mutex);
+                    request_queue.push(1);
+                }
+                queue_cv.notify_one();
+
+                next_request_time += interval;
+                // If we have fallen behind, catch up
+                if (next_request_time < now) {
+                    next_request_time = now + interval;
                 }
             }
-            queue_cv.notify_all();
+            std::this_thread::sleep_for(std::chrono::microseconds(10)); // Small sleep to prevent busy-waiting
         }
 
-        stop_flag = true;
+        // Wait for remaining requests to complete
+        {
+            std::lock_guard<std::mutex> lock(queue_mutex);
+            stop_flag = true;
+        }
         queue_cv.notify_all();
         for (auto& thread : threads) {
             thread.join();
         }
+
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> total_duration = end - start;
         report(total_duration.count());

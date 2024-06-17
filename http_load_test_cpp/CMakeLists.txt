@@ -13,5 +13,5 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(CURL REQUIRED)
 include_directories(${CURL_INCLUDE_DIR})
 
-add_executable(http_load_test_cpp_update main.cpp)
+add_executable(http_load_test_cpp_update load_tester.cpp)
 target_link_libraries(http_load_test_cpp_update ${CURL_LIBRARIES})
